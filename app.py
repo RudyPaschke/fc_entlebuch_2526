@@ -821,36 +821,47 @@ def show_filter_summary_cards(summary: dict):
     st.markdown('<div class="fce-metric-grid">' + html + '</div>', unsafe_allow_html=True)
 
 
+def _column_width(label: str, min_width: int = 90, max_width: int = 240) -> int:
+    """Spaltenbreite so wählen, dass mindestens der Spaltentitel lesbar bleibt."""
+    # Grobe Faustregel: 8–9 px pro Zeichen plus etwas Innenabstand.
+    width = len(str(label)) * 9 + 34
+    return max(min_width, min(width, max_width))
+
+
 def _auto_column_config(df: pd.DataFrame) -> dict:
-    """Kompakte Standardbreiten für Tabellen, damit einzelne Spalten nicht unnötig breit werden."""
+    """Kompakte, aber lesbare Standardbreiten für Tabellen.
+
+    Wichtig: Spalten dürfen nicht schmaler als der sichtbare Spaltentitel sein.
+    Auf Mobile wird horizontal gescrollt, statt Titel abzuschneiden.
+    """
     config = {}
-    small_num_cols = {
+    num_cols = {
         "Nr", "Runde", "Punkte", "Minuten", "Tore", "Assists", "Scorer", "Gelb", "Gelb-Rot", "Rot",
         "Einsätze", "Startelf", "Einwechslungen", "Minute", "Spiele", "Siege", "Unentschieden", "Niederlagen",
         "Tore FCE", "Tore Gegner", "Gegentore", "Tordiff", "Ohne Gegentor", "Ohne eigenes Tor", "Eingesetzte Spieler",
         "Min. Führung", "Min. Rückstand", "Min. Unentschieden", "Differenz", "Vorrunde", "Rückrunde", "Veränderung",
     }
     for col in df.columns:
-        if col in small_num_cols or pd.api.types.is_numeric_dtype(df[col]):
-            config[col] = st.column_config.NumberColumn(col, width=72)
+        if col in num_cols or pd.api.types.is_numeric_dtype(df[col]):
+            config[col] = st.column_config.NumberColumn(col, width=_column_width(col, min_width=92, max_width=175))
         elif col == "Datum":
-            config[col] = st.column_config.TextColumn(col, width=92)
+            config[col] = st.column_config.TextColumn(col, width=_column_width(col, min_width=98, max_width=115))
         elif col in {"Wettbewerb", "Phase", "Status", "Ergebnis", "Heim/Auswärts"}:
-            config[col] = st.column_config.TextColumn(col, width=110)
+            config[col] = st.column_config.TextColumn(col, width=_column_width(col, min_width=118, max_width=155))
         elif col in {"Resultat", "Resultat Halbzeit", "Spielstand_Nach_Tor"}:
-            config[col] = st.column_config.TextColumn(col, width=95)
+            config[col] = st.column_config.TextColumn(col, width=_column_width(col, min_width=105, max_width=175))
         elif col in {"Spieler", "Torschütze"}:
-            config[col] = st.column_config.TextColumn(col, width=155)
+            config[col] = st.column_config.TextColumn(col, width=_column_width(col, min_width=165, max_width=210))
         elif col == "Gegner":
-            config[col] = st.column_config.TextColumn(col, width=150)
+            config[col] = st.column_config.TextColumn(col, width=_column_width(col, min_width=160, max_width=210))
         elif col == "Spiel":
-            config[col] = st.column_config.TextColumn(col, width=210)
+            config[col] = st.column_config.TextColumn(col, width=_column_width(col, min_width=240, max_width=280))
         elif col == "Torfolge":
-            config[col] = st.column_config.TextColumn(col, width=185)
+            config[col] = st.column_config.TextColumn(col, width=_column_width(col, min_width=195, max_width=240))
         elif col == "Kennzahl":
-            config[col] = st.column_config.TextColumn(col, width=165)
+            config[col] = st.column_config.TextColumn(col, width=_column_width(col, min_width=175, max_width=230))
         else:
-            config[col] = st.column_config.TextColumn(col, width=130)
+            config[col] = st.column_config.TextColumn(col, width=_column_width(col, min_width=130, max_width=210))
     return config
 
 
@@ -1015,8 +1026,8 @@ if page == "🏠 Übersicht":
                 ms_view[["Datum", "Runde", "Phase", "Heim/Auswärts", "Spiel", "Resultat", "Resultat Halbzeit", "Ergebnis", "Punkte", "Torfolge"]],
                 height=520,
                 column_config={
-                    "Torfolge": st.column_config.TextColumn("Torfolge", width=185),
-                    "Spiel": st.column_config.TextColumn("Spiel", width=210),
+                    "Torfolge": st.column_config.TextColumn("Torfolge", width=200),
+                    "Spiel": st.column_config.TextColumn("Spiel", width=240),
                 },
             )
 
@@ -1030,8 +1041,8 @@ if page == "🏠 Übersicht":
                 cup_view[["Datum", "Runde", "Heim/Auswärts", "Spiel", "Resultat", "Resultat Halbzeit", "Ergebnis", "Torfolge"]],
                 height=180,
                 column_config={
-                    "Torfolge": st.column_config.TextColumn("Torfolge", width=185),
-                    "Spiel": st.column_config.TextColumn("Spiel", width=210),
+                    "Torfolge": st.column_config.TextColumn("Torfolge", width=200),
+                    "Spiel": st.column_config.TextColumn("Spiel", width=240),
                 },
             )
 
@@ -1073,8 +1084,8 @@ elif page == "📅 Spiele":
         games_view[cols],
         height=520,
         column_config={
-            "Spiel": st.column_config.TextColumn("Spiel", width=210),
-            "Torfolge": st.column_config.TextColumn("Torfolge", width=185),
+            "Spiel": st.column_config.TextColumn("Spiel", width=240),
+            "Torfolge": st.column_config.TextColumn("Torfolge", width=200),
         },
     )
 
@@ -1196,7 +1207,7 @@ elif page == "🔎 Spielerprofil":
         compact_dataframe(
             p_games[["Datum", "Wettbewerb", "Runde", "Phase", "Spiel", "Resultat", "Status", "Minuten", "Tore", "Assists", "Scorer", "Gelb", "Gelb-Rot", "Rot"]],
             height=520,
-            column_config={"Spiel": st.column_config.TextColumn("Spiel", width=210)},
+            column_config={"Spiel": st.column_config.TextColumn("Spiel", width=240)},
         )
 
         trend = p_stats.sort_values("Datum").copy()
@@ -1217,4 +1228,4 @@ elif page == "🔎 Spielerprofil":
 
 st.sidebar.divider()
 st.sidebar.caption(f"Datenquelle: {DATA_FILE.name}")
-st.sidebar.caption("Version: 1.4.6 · Tabellen optimiert")
+st.sidebar.caption("Version: 1.4.7 · Tabellenbreiten korrigiert")
