@@ -126,13 +126,13 @@ CUSTOM_CSS = f"""
     color: #374151;
 }}
 
-/* Tabs */
-button[data-baseweb="tab"] {{
+/* Navigation / Inputs */
+div[data-testid="stSelectbox"] label, div[data-testid="stMultiSelect"] label {{
     font-weight: 800;
 }}
-button[data-baseweb="tab"][aria-selected="true"] {{
-    color: var(--fce-green) !important;
-    border-bottom-color: var(--fce-green) !important;
+div[data-testid="stDataFrame"] {{
+    border-radius: 14px;
+    overflow: hidden;
 }}
 
 /* Buttons */
@@ -199,9 +199,19 @@ h1, h2, h3 {{
     .fce-pill {{font-size: 0.82rem; padding: 6px 10px;}}
     [data-testid="stMetric"] {{padding: 12px 12px; border-radius: 12px;}}
     [data-testid="stMetricValue"] {{font-size: 1.35rem;}}
-    button[data-baseweb="tab"] {{font-size: 0.82rem; padding-left: 0.4rem; padding-right: 0.4rem;}}
     div[data-testid="stHorizontalBlock"] {{gap: 0.5rem;}}
+    div[data-testid="stDataFrame"] {{font-size: 0.82rem;}}
+    .fce-metric-grid {{grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;}}
+    .fce-card {{padding: 12px 12px; border-radius: 14px;}}
+    .fce-card-title {{font-size: 0.72rem;}}
+    .fce-card-value {{font-size: 1.3rem;}}
+    .fce-card-sub {{font-size: 0.74rem;}}
 }}
+@media (max-width: 420px) {{
+    .fce-metric-grid {{grid-template-columns: 1fr 1fr;}}
+    .fce-title {{font-size: 1.55rem;}}
+}}
+
 .fce-metric-grid {{
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -676,30 +686,50 @@ def make_home_away_comparison_table(games_df: pd.DataFrame, stats_df: pd.DataFra
 
 def render_home_away_section(title: str, games_df: pd.DataFrame, stats_df: pd.DataFrame, goals_df: pd.DataFrame):
     st.markdown(f"### {title}")
-    heim = aggregate_team_overview(games_df[games_df["Heim/Auswärts"].astype(str).str.strip().eq("Heim")], stats_df, goals_df)
-    aus = aggregate_team_overview(games_df[games_df["Heim/Auswärts"].astype(str).str.strip().eq("Auswärts")], stats_df, goals_df)
-
-    col_home, col_away = st.columns(2)
-    with col_home:
-        render_overview_section("Heimspiele", heim)
-    with col_away:
-        render_overview_section("Auswärtsspiele", aus)
+    st.markdown(
+        '<div class="fce-mini-table-note">Direkter Vergleich der Heim- und Auswärtsspiele. Die Tabelle ist bewusst kompakt gehalten, damit sie auf dem Handy besser lesbar bleibt.</div>',
+        unsafe_allow_html=True,
+    )
 
     table, diff_table = make_home_away_comparison_table(games_df, stats_df, goals_df)
     st.markdown("**Heim/Auswärts-Tabelle**")
-    st.dataframe(table, use_container_width=True, hide_index=True)
+    compact_dataframe(table, height=145)
     st.markdown("**Differenz Auswärts - Heim**")
     st.caption("Positive Werte bedeuten: auswärts höher als zuhause. Bei Gegentoren/Rückstand ist ein tieferer Wert natürlich besser.")
-    st.dataframe(diff_table, use_container_width=True, hide_index=True)
+    compact_dataframe(diff_table, height=430)
 
 def show_metric_row(summary: dict):
-    cols = st.columns(6)
-    cols[0].metric("Spiele", summary["spiele"])
-    cols[1].metric("Bilanz", f"{summary['siege']}-{summary['unentschieden']}-{summary['niederlagen']}", help="Siege-Unentschieden-Niederlagen")
-    cols[2].metric("Punkte MS", summary["punkte"], help="Nur Meisterschaftsspiele")
-    cols[3].metric("Tore", f"{summary['tore']}:{summary['gegentore']}", delta=summary["tordiff"])
-    cols[4].metric("Ø Tore", summary["schnitt_tore"])
-    cols[5].metric("Ø Gegentore", summary["schnitt_gegentore"])
+    # Rückwärtskompatibel: Die eigentliche Darstellung erfolgt als responsive Karten.
+    show_filter_summary_cards(summary)
+
+
+def show_filter_summary_cards(summary: dict):
+    """Kompakte, mobile-freundliche Kennzahlen zum aktuellen Filter."""
+    cards = [
+        ("Spiele", summary["spiele"], "aktueller Filter"),
+        ("Bilanz", f"{summary['siege']}-{summary['unentschieden']}-{summary['niederlagen']}", "S · U · N"),
+        ("Punkte MS", summary["punkte"], "nur Meisterschaft"),
+        ("Tore", f"{summary['tore']}:{summary['gegentore']}", f"Diff. {summary['tordiff']:+d}"),
+        ("Ø Tore", summary["schnitt_tore"], "pro Spiel"),
+        ("Ø Gegentore", summary["schnitt_gegentore"], "pro Spiel"),
+    ]
+    html = ''.join(
+        f'<div class="fce-card"><div class="fce-card-title">{title}</div><div class="fce-card-value">{value}</div><div class="fce-card-sub">{sub}</div></div>'
+        for title, value, sub in cards
+    )
+    st.markdown('<div class="fce-metric-grid">' + html + '</div>', unsafe_allow_html=True)
+
+
+def compact_dataframe(df: pd.DataFrame, *, height: int | None = None, column_order=None, column_config=None):
+    """Einheitliche Tabellen-Ausgabe. Auf dem Handy horizontal scrollbar, auf Desktop volle Breite."""
+    st.dataframe(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        height=height,
+        column_order=column_order,
+        column_config=column_config or {},
+    )
 
 
 def make_goal_bins(tore_df: pd.DataFrame) -> pd.DataFrame:
@@ -714,18 +744,19 @@ def make_goal_bins(tore_df: pd.DataFrame) -> pd.DataFrame:
     return agg[agg["Tore"] > 0]
 
 
-def style_figure(fig, height: int | None = None):
-    """Einheitliches FC-Entlebuch-Layout für Plotly-Grafiken."""
+def style_figure(fig, height: int | None = None, horizontal: bool = False):
+    """Einheitliches FC-Entlebuch-Layout für Plotly-Grafiken, lesbar auf Desktop und Handy."""
     fig.update_layout(
         plot_bgcolor="white",
         paper_bgcolor="white",
-        font=dict(color=FCE_BLACK),
-        title=dict(font=dict(size=20, color=FCE_BLACK)),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        margin=dict(l=20, r=20, t=65, b=35),
+        font=dict(color=FCE_BLACK, size=12),
+        title=dict(font=dict(size=18, color=FCE_BLACK), x=0.01, xanchor="left"),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        margin=dict(l=115 if horizontal else 35, r=18, t=68, b=45),
+        bargap=0.25,
     )
-    fig.update_xaxes(showgrid=False, linecolor="#e5e7eb")
-    fig.update_yaxes(gridcolor="#edf2f0", zerolinecolor="#e5e7eb")
+    fig.update_xaxes(showgrid=True, gridcolor="#edf2f0", linecolor="#e5e7eb", automargin=True)
+    fig.update_yaxes(showgrid=False, linecolor="#e5e7eb", automargin=True, tickfont=dict(size=11))
     if height:
         fig.update_layout(height=height)
     return fig
@@ -773,20 +804,25 @@ filtered_stats = stats_full[stats_full["Spiel_ID"].isin(filtered_game_ids)].copy
 filtered_tore = tore_full[tore_full["Spiel_ID"].isin(filtered_game_ids)].copy()
 
 summary = aggregate_games(filtered_games)
-show_metric_row(summary)
+
+st.markdown("### Aktueller Filter")
+show_filter_summary_cards(summary)
+st.caption("Die grossen Saisonvergleiche auf der Übersichtsseite zeigen bewusst immer die fixen Saisonblöcke. Die Filter wirken auf Spieler, Spiele, Tore und Profil.")
 
 st.divider()
 
-tab_overview, tab_players, tab_games, tab_goals, tab_profile = st.tabs([
-    "🏠 Übersicht", "👥 Spieler", "📅 Spiele", "⚽ Tore", "🔎 Profil"
-])
+page = st.selectbox(
+    "Bereich auswählen",
+    ["🏠 Übersicht", "👥 Spielerstatistik", "📅 Spiele", "⚽ Tore & Zeitpunkte", "🔎 Spielerprofil"],
+    index=0,
+)
 
-with tab_overview:
+if page == "🏠 Übersicht":
     st.subheader("Übersicht")
     st.markdown(
         """
         <div class="fce-section-note">
-        Die Übersicht ist bewusst als Startseite gebaut: zuerst die gesamte Meisterschaft, dann der direkte Vergleich Vorrunde/Rückrunde und danach der Cup separat. Die Filter in der Sidebar gelten für die übrigen Tabs; diese Startseite zeigt immer die fixen Saisonblöcke.
+        Die Übersicht ist bewusst als Startseite gebaut: zuerst die gesamte Meisterschaft, dann der direkte Vergleich Vorrunde/Rückrunde, Heim/Auswärts und danach der Cup separat.
         </div>
         """,
         unsafe_allow_html=True,
@@ -795,51 +831,56 @@ with tab_overview:
     ms_games = spiele[spiele["Wettbewerb"] == "Meisterschaft"].copy()
     cup_games = spiele[spiele["Wettbewerb"] == "Cup"].copy()
 
-    overview_tab_ms, overview_tab_halves, overview_tab_homeaway, overview_tab_cup, overview_tab_games = st.tabs([
-        "Meisterschaft", "Vorrunde/Rückrunde", "Heim/Auswärts", "Cup", "Spiele"
-    ])
+    overview_section = st.selectbox(
+        "Übersichtsbereich auswählen",
+        ["Meisterschaft", "Vorrunde/Rückrunde", "Heim/Auswärts", "Cup", "Spiele"],
+        index=0,
+    )
 
-    with overview_tab_ms:
+    if overview_section == "Meisterschaft":
         ms_total = aggregate_team_overview(ms_games, stats_full, tore_full)
         render_overview_section("Meisterschaft · Gesamt", ms_total)
 
-    with overview_tab_halves:
+    elif overview_section == "Vorrunde/Rückrunde":
         st.markdown("### Vorrunde vs. Rückrunde")
         overview_df, diff_df = make_overview_comparison_table(ms_games, stats_full, tore_full)
         st.markdown('<div class="fce-mini-table-note">Die Differenz zeigt jeweils: Rückrunde minus Vorrunde.</div>', unsafe_allow_html=True)
-        st.dataframe(overview_df, use_container_width=True, hide_index=True)
+        compact_dataframe(overview_df, height=145)
         st.write("**Differenz Rückrunde - Vorrunde**")
-        st.dataframe(diff_df, use_container_width=True, hide_index=True)
+        compact_dataframe(diff_df, height=430)
 
-    with overview_tab_homeaway:
+    elif overview_section == "Heim/Auswärts":
         st.markdown("### Heim- und Auswärtsvergleich")
         st.markdown(
             '<div class="fce-section-note">Dieser Bereich zeigt die gleichen Kennzahlen wie die Startübersicht, getrennt nach Heim- und Auswärtsspielen.</div>',
             unsafe_allow_html=True,
         )
-        ha_tab_all, ha_tab_ms, ha_tab_cup = st.tabs(["Alle Pflichtspiele", "Meisterschaft", "Cup"])
-        with ha_tab_all:
+        ha_section = st.selectbox("Wettbewerb für Heim/Auswärts", ["Alle Pflichtspiele", "Meisterschaft", "Cup"], index=0)
+        if ha_section == "Alle Pflichtspiele":
             render_home_away_section("Alle Pflichtspiele", spiele, stats_full, tore_full)
-        with ha_tab_ms:
+        elif ha_section == "Meisterschaft":
             render_home_away_section("Meisterschaft", ms_games, stats_full, tore_full)
-        with ha_tab_cup:
+        else:
             render_home_away_section("Cup", cup_games, stats_full, tore_full)
 
-    with overview_tab_cup:
+    elif overview_section == "Cup":
         cup_total = aggregate_team_overview(cup_games, stats_full, tore_full)
         render_overview_section("Cup", cup_total)
 
-    with overview_tab_games:
+    elif overview_section == "Spiele":
         st.markdown("### Meisterschaft: Spiele im Überblick")
         ms_view = ms_games.sort_values(["Datum", "Spiel_ID"]).copy()
         if not ms_view.empty:
             ms_view["Datum"] = ms_view["Datum"].dt.strftime("%d.%m.%Y")
             ms_view["Spiel"] = ms_view["Heimteam"].astype(str) + " - " + ms_view["Auswärtsteam"].astype(str)
             ms_view["Torfolge"] = ms_view["Spiel_ID"].apply(lambda sid: torfolge_for_game(tore_full, sid))
-            st.dataframe(
+            compact_dataframe(
                 ms_view[["Datum", "Runde", "Phase", "Heim/Auswärts", "Spiel", "Resultat", "Resultat Halbzeit", "Ergebnis", "Punkte", "Torfolge"]],
-                use_container_width=True,
-                hide_index=True,
+                height=520,
+                column_config={
+                    "Torfolge": st.column_config.TextColumn("Torfolge", width="large"),
+                    "Spiel": st.column_config.TextColumn("Spiel", width="large"),
+                },
             )
 
         st.markdown("### Cup: Spiele im Überblick")
@@ -848,21 +889,28 @@ with tab_overview:
             cup_view["Datum"] = cup_view["Datum"].dt.strftime("%d.%m.%Y")
             cup_view["Spiel"] = cup_view["Heimteam"].astype(str) + " - " + cup_view["Auswärtsteam"].astype(str)
             cup_view["Torfolge"] = cup_view["Spiel_ID"].apply(lambda sid: torfolge_for_game(tore_full, sid))
-            st.dataframe(
+            compact_dataframe(
                 cup_view[["Datum", "Runde", "Heim/Auswärts", "Spiel", "Resultat", "Resultat Halbzeit", "Ergebnis", "Torfolge"]],
-                use_container_width=True,
-                hide_index=True,
+                height=180,
+                column_config={
+                    "Torfolge": st.column_config.TextColumn("Torfolge", width="large"),
+                    "Spiel": st.column_config.TextColumn("Spiel", width="large"),
+                },
             )
 
-
-with tab_players:
+elif page == "👥 Spielerstatistik":
     st.subheader("Spielerstatistik")
     player_agg = aggregate_players(filtered_stats)
-    st.dataframe(
+    compact_dataframe(
         player_agg,
-        use_container_width=True,
-        hide_index=True,
+        height=620,
         column_config={
+            "Nr": st.column_config.NumberColumn("Nr", width="small"),
+            "Spieler": st.column_config.TextColumn("Spieler", width="medium"),
+            "Einsätze": st.column_config.NumberColumn("Eins.", width="small"),
+            "Startelf": st.column_config.NumberColumn("Start", width="small"),
+            "Einwechslungen": st.column_config.NumberColumn("Einw.", width="small"),
+            "Minuten": st.column_config.NumberColumn("Min.", width="small"),
             "Startelfquote": st.column_config.ProgressColumn("Startelfquote", format="%.0f%%", min_value=0, max_value=1),
             "Tore/90": st.column_config.NumberColumn("Tore/90", format="%.2f"),
             "Assists/90": st.column_config.NumberColumn("Assists/90", format="%.2f"),
@@ -877,14 +925,21 @@ with tab_players:
         mime="text/csv",
     )
 
-with tab_games:
+elif page == "📅 Spiele":
     st.subheader("Spielübersicht")
     games_view = filtered_games.sort_values("Datum").copy()
     games_view["Datum"] = games_view["Datum"].dt.strftime("%d.%m.%Y")
     games_view["Spiel"] = games_view["Heimteam"].astype(str) + " - " + games_view["Auswärtsteam"].astype(str)
     games_view["Torfolge"] = games_view["Spiel_ID"].apply(lambda sid: torfolge_for_game(tore_full, sid))
     cols = ["Datum", "Wettbewerb", "Runde", "Phase", "Heim/Auswärts", "Spiel", "Resultat", "Resultat Halbzeit", "Ergebnis", "Punkte", "Torfolge"]
-    st.dataframe(games_view[cols], use_container_width=True, hide_index=True)
+    compact_dataframe(
+        games_view[cols],
+        height=520,
+        column_config={
+            "Spiel": st.column_config.TextColumn("Spiel", width="large"),
+            "Torfolge": st.column_config.TextColumn("Torfolge", width="large"),
+        },
+    )
 
     st.subheader("Spieldetails")
     if not filtered_games.empty:
@@ -902,46 +957,54 @@ with tab_games:
         nicht_eingesetzt = detail_stats[detail_stats["Minuten"] == 0].sort_values(["Nr", "Spieler"]).copy()
 
         st.write("**Eingesetzte Spieler**")
-        st.dataframe(eingesetzte[["Nr", "Spieler", "Status", "Minuten", "Tore", "Assists", "Scorer", "Gelb", "Gelb-Rot", "Rot"]], use_container_width=True, hide_index=True)
+        compact_dataframe(eingesetzte[["Nr", "Spieler", "Status", "Minuten", "Tore", "Assists", "Scorer", "Gelb", "Gelb-Rot", "Rot"]], height=430)
 
         if not nicht_eingesetzt.empty:
             with st.expander(f"Nicht eingesetzt ({len(nicht_eingesetzt)})"):
-                st.dataframe(nicht_eingesetzt[["Nr", "Spieler", "Status", "Minuten"]], use_container_width=True, hide_index=True)
+                compact_dataframe(nicht_eingesetzt[["Nr", "Spieler", "Status", "Minuten"]], height=320)
 
         goal_detail = tore_full[tore_full["Spiel_ID"] == selected_game_id].sort_values("Minute")
         if not goal_detail.empty:
             st.write("**Torfolge**")
-            st.dataframe(goal_detail[["Minute", "Team", "Torschütze", "Spielstand_Nach_Tor"]], use_container_width=True, hide_index=True)
+            compact_dataframe(goal_detail[["Minute", "Team", "Torschütze", "Spielstand_Nach_Tor"]], height=240)
 
-with tab_goals:
+elif page == "⚽ Tore & Zeitpunkte":
     st.subheader("Tore & Zeitpunkte")
-    c1, c2 = st.columns([1.2, 1])
-    with c1:
-        goal_bins = make_goal_bins(filtered_tore)
-        if not goal_bins.empty:
-            fig = px.bar(goal_bins, x="Zeitfenster", y="Tore", color="Team", barmode="group", title="Tore nach Spielabschnitt", color_discrete_map={"FC Entlebuch": FCE_GREEN, TEAM_NAME: FCE_GREEN, "Gegner": FCE_RED})
-            fig.update_layout(legend_title_text="")
-            fig = style_figure(fig, height=420)
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("Keine Tore für die gewählten Filter vorhanden.")
+    goal_bins = make_goal_bins(filtered_tore)
+    if not goal_bins.empty:
+        fig = px.bar(
+            goal_bins,
+            y="Zeitfenster",
+            x="Tore",
+            color="Team",
+            orientation="h",
+            barmode="group",
+            title="Tore nach Spielabschnitt",
+            color_discrete_map={"FC Entlebuch": FCE_GREEN, TEAM_NAME: FCE_GREEN, "Gegner": FCE_RED},
+        )
+        fig.update_layout(legend_title_text="")
+        fig.update_yaxes(categoryorder="array", categoryarray=["90+", "76–90", "61–75", "46–60", "31–45", "16–30", "0–15"])
+        fig = style_figure(fig, height=440, horizontal=True)
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    else:
+        st.info("Keine Tore für die gewählten Filter vorhanden.")
 
-    with c2:
-        if not filtered_tore.empty:
-            team_goals = filtered_tore.groupby("Team").size().reset_index(name="Tore").sort_values("Tore", ascending=False)
-            st.dataframe(team_goals, use_container_width=True, hide_index=True)
-            fce_goals = filtered_tore[filtered_tore["Team"] == TEAM_NAME]
-            scorers = fce_goals.groupby(["Nr", "Torschütze"]).size().reset_index(name="Tore").sort_values("Tore", ascending=False)
-            st.write("**Torschützen nach Tor-Tabelle**")
-            st.dataframe(scorers, use_container_width=True, hide_index=True)
+    if not filtered_tore.empty:
+        team_goals = filtered_tore.groupby("Team").size().reset_index(name="Tore").sort_values("Tore", ascending=False)
+        st.markdown("### Tore nach Team")
+        compact_dataframe(team_goals, height=140)
+        fce_goals = filtered_tore[filtered_tore["Team"] == TEAM_NAME]
+        scorers = fce_goals.groupby(["Nr", "Torschütze"]).size().reset_index(name="Tore").sort_values("Tore", ascending=False)
+        st.markdown("### Torschützen")
+        compact_dataframe(scorers, height=360)
 
-    st.write("**Alle Tore**")
+    st.markdown("### Alle Tore")
     goals_view = filtered_tore.sort_values(["Datum", "Minute"]).copy()
     if not goals_view.empty:
         goals_view["Datum"] = goals_view["Datum"].dt.strftime("%d.%m.%Y")
-        st.dataframe(goals_view[["Datum", "Wettbewerb", "Phase", "Gegner", "Minute", "Team", "Torschütze", "Spielstand_Nach_Tor"]], use_container_width=True, hide_index=True)
+        compact_dataframe(goals_view[["Datum", "Wettbewerb", "Phase", "Gegner", "Minute", "Team", "Torschütze", "Spielstand_Nach_Tor"]], height=520)
 
-with tab_profile:
+elif page == "🔎 Spielerprofil":
     st.subheader("Spielerprofil")
     player_options = spieler.sort_values(["Nr", "Spieler"])[["Spieler_ID", "Nr", "Spieler"]].copy()
     player_options["Label"] = player_options["Nr"].astype(str) + " – " + player_options["Spieler"]
@@ -954,13 +1017,19 @@ with tab_profile:
         st.info("Für diesen Spieler gibt es im aktuellen Filter keine Spiele.")
     else:
         row = p_agg.iloc[0]
-        pc = st.columns(6)
-        pc[0].metric("Einsätze", int(row["Einsätze"]))
-        pc[1].metric("Startelf", int(row["Startelf"]))
-        pc[2].metric("Minuten", int(row["Minuten"]))
-        pc[3].metric("Tore", int(row["Tore"]))
-        pc[4].metric("Assists", int(row["Assists"]))
-        pc[5].metric("Scorer", int(row["Scorer"]))
+        cards = [
+            ("Einsätze", int(row["Einsätze"]), "mit Spielminuten"),
+            ("Startelf", int(row["Startelf"]), "von Beginn weg"),
+            ("Minuten", int(row["Minuten"]), "Einsatzzeit"),
+            ("Tore", int(row["Tore"]), "Meisterschaft/Cup gemäss Filter"),
+            ("Assists", int(row["Assists"]), "Vorlagen"),
+            ("Scorer", int(row["Scorer"]), "Tore + Assists"),
+        ]
+        html = ''.join(
+            f'<div class="fce-card"><div class="fce-card-title">{title}</div><div class="fce-card-value">{value}</div><div class="fce-card-sub">{sub}</div></div>'
+            for title, value, sub in cards
+        )
+        st.markdown('<div class="fce-metric-grid">' + html + '</div>', unsafe_allow_html=True)
 
         if int(row["Einsätze"]) == 0:
             st.info("Dieser Spieler hat im aktuellen Filter keine Einsatzminuten. Die Spiele werden trotzdem unten aufgeführt.")
@@ -970,7 +1039,7 @@ with tab_profile:
         comparison_df = make_player_phase_comparison(p_stats)
         display_comparison = comparison_df.copy()
         display_comparison["Veränderung"] = display_comparison["Veränderung"].apply(format_change)
-        st.dataframe(display_comparison, use_container_width=True, hide_index=True)
+        compact_dataframe(display_comparison, height=215)
 
         mobile_rows = []
         for _, comp_row in comparison_df.iterrows():
@@ -983,20 +1052,32 @@ with tab_profile:
             )
         st.markdown('<div class="fce-metric-grid">' + ''.join(mobile_rows) + '</div>', unsafe_allow_html=True)
 
+        st.markdown("### Spiele des Spielers")
         p_games = p_stats.sort_values("Datum").copy()
         p_games["Datum"] = p_games["Datum"].dt.strftime("%d.%m.%Y")
         p_games["Spiel"] = p_games["Heimteam"].astype(str) + " - " + p_games["Auswärtsteam"].astype(str)
-        st.dataframe(p_games[["Datum", "Wettbewerb", "Runde", "Phase", "Spiel", "Resultat", "Status", "Minuten", "Tore", "Assists", "Scorer", "Gelb", "Gelb-Rot", "Rot"]], use_container_width=True, hide_index=True)
+        compact_dataframe(
+            p_games[["Datum", "Wettbewerb", "Runde", "Phase", "Spiel", "Resultat", "Status", "Minuten", "Tore", "Assists", "Scorer", "Gelb", "Gelb-Rot", "Rot"]],
+            height=520,
+            column_config={"Spiel": st.column_config.TextColumn("Spiel", width="large")},
+        )
 
         trend = p_stats.sort_values("Datum").copy()
         trend = trend[pd.notna(trend["Datum"])]
         if not trend.empty:
             trend["Spiel"] = trend["Datum"].dt.strftime("%d.%m.") + " " + trend["Gegner"].astype(str)
-            fig = px.bar(trend, x="Spiel", y="Minuten", title=f"Einsatzminuten: {row['Spieler']}", color_discrete_sequence=[FCE_GREEN])
-            fig.update_layout(xaxis_tickangle=-35)
-            fig = style_figure(fig, height=330)
-            st.plotly_chart(fig, use_container_width=True)
+            fig = px.bar(
+                trend,
+                y="Spiel",
+                x="Minuten",
+                orientation="h",
+                title=f"Einsatzminuten: {row['Spieler']}",
+                color_discrete_sequence=[FCE_GREEN],
+            )
+            fig.update_yaxes(autorange="reversed")
+            fig = style_figure(fig, height=max(430, min(850, 28 * len(trend) + 120)), horizontal=True)
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 st.sidebar.divider()
 st.sidebar.caption(f"Datenquelle: {DATA_FILE.name}")
-st.sidebar.caption("Version: 1.3.4 · Spielerprofil-Vergleich")
+st.sidebar.caption("Version: 1.4 · Mobile optimiert")

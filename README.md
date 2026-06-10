@@ -18,3 +18,8 @@ python3 -m streamlit run app.py
 
 
 Neu in Version 1.3.3: Im Spielerprofil gibt es einen Vergleich Total Meisterschaft / Vorrunde / Rückrunde / Veränderung für Einsatzminuten, Startelf-Einsätze, Einwechslungen, Tore und Assists.
+
+
+## Änderung v1.4.1
+
+- Auf der Übersichtseite im Bereich Heim/Auswärts wurden die Kennzahlen-Kacheln entfernt. Der Bereich zeigt nun nur noch die kompakte Vergleichstabelle und die Differenz-Tabelle.
