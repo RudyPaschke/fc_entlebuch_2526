@@ -821,15 +821,51 @@ def show_filter_summary_cards(summary: dict):
     st.markdown('<div class="fce-metric-grid">' + html + '</div>', unsafe_allow_html=True)
 
 
-def compact_dataframe(df: pd.DataFrame, *, height: int | None = None, column_order=None, column_config=None):
-    """Einheitliche Tabellen-Ausgabe. Auf dem Handy horizontal scrollbar, auf Desktop volle Breite."""
+def _auto_column_config(df: pd.DataFrame) -> dict:
+    """Kompakte Standardbreiten für Tabellen, damit einzelne Spalten nicht unnötig breit werden."""
+    config = {}
+    small_num_cols = {
+        "Nr", "Runde", "Punkte", "Minuten", "Tore", "Assists", "Scorer", "Gelb", "Gelb-Rot", "Rot",
+        "Einsätze", "Startelf", "Einwechslungen", "Minute", "Spiele", "Siege", "Unentschieden", "Niederlagen",
+        "Tore FCE", "Tore Gegner", "Gegentore", "Tordiff", "Ohne Gegentor", "Ohne eigenes Tor", "Eingesetzte Spieler",
+        "Min. Führung", "Min. Rückstand", "Min. Unentschieden", "Differenz", "Vorrunde", "Rückrunde", "Veränderung",
+    }
+    for col in df.columns:
+        if col in small_num_cols or pd.api.types.is_numeric_dtype(df[col]):
+            config[col] = st.column_config.NumberColumn(col, width=72)
+        elif col == "Datum":
+            config[col] = st.column_config.TextColumn(col, width=92)
+        elif col in {"Wettbewerb", "Phase", "Status", "Ergebnis", "Heim/Auswärts"}:
+            config[col] = st.column_config.TextColumn(col, width=110)
+        elif col in {"Resultat", "Resultat Halbzeit", "Spielstand_Nach_Tor"}:
+            config[col] = st.column_config.TextColumn(col, width=95)
+        elif col in {"Spieler", "Torschütze"}:
+            config[col] = st.column_config.TextColumn(col, width=155)
+        elif col == "Gegner":
+            config[col] = st.column_config.TextColumn(col, width=150)
+        elif col == "Spiel":
+            config[col] = st.column_config.TextColumn(col, width=210)
+        elif col == "Torfolge":
+            config[col] = st.column_config.TextColumn(col, width=185)
+        elif col == "Kennzahl":
+            config[col] = st.column_config.TextColumn(col, width=165)
+        else:
+            config[col] = st.column_config.TextColumn(col, width=130)
+    return config
+
+
+def compact_dataframe(df: pd.DataFrame, *, height: int | None = None, column_order=None, column_config=None, full_width: bool = False):
+    """Kompakte Tabellen-Ausgabe mit sinnvollen Spaltenbreiten und horizontalem Scrollen auf Mobile."""
+    auto_config = _auto_column_config(df)
+    if column_config:
+        auto_config.update(column_config)
     st.dataframe(
         df,
-        use_container_width=True,
+        use_container_width=full_width,
         hide_index=True,
         height=height,
         column_order=column_order,
-        column_config=column_config or {},
+        column_config=auto_config,
     )
 
 
@@ -979,8 +1015,8 @@ if page == "🏠 Übersicht":
                 ms_view[["Datum", "Runde", "Phase", "Heim/Auswärts", "Spiel", "Resultat", "Resultat Halbzeit", "Ergebnis", "Punkte", "Torfolge"]],
                 height=520,
                 column_config={
-                    "Torfolge": st.column_config.TextColumn("Torfolge", width="large"),
-                    "Spiel": st.column_config.TextColumn("Spiel", width="large"),
+                    "Torfolge": st.column_config.TextColumn("Torfolge", width=185),
+                    "Spiel": st.column_config.TextColumn("Spiel", width=210),
                 },
             )
 
@@ -994,8 +1030,8 @@ if page == "🏠 Übersicht":
                 cup_view[["Datum", "Runde", "Heim/Auswärts", "Spiel", "Resultat", "Resultat Halbzeit", "Ergebnis", "Torfolge"]],
                 height=180,
                 column_config={
-                    "Torfolge": st.column_config.TextColumn("Torfolge", width="large"),
-                    "Spiel": st.column_config.TextColumn("Spiel", width="large"),
+                    "Torfolge": st.column_config.TextColumn("Torfolge", width=185),
+                    "Spiel": st.column_config.TextColumn("Spiel", width=210),
                 },
             )
 
@@ -1037,8 +1073,8 @@ elif page == "📅 Spiele":
         games_view[cols],
         height=520,
         column_config={
-            "Spiel": st.column_config.TextColumn("Spiel", width="large"),
-            "Torfolge": st.column_config.TextColumn("Torfolge", width="large"),
+            "Spiel": st.column_config.TextColumn("Spiel", width=210),
+            "Torfolge": st.column_config.TextColumn("Torfolge", width=185),
         },
     )
 
@@ -1160,7 +1196,7 @@ elif page == "🔎 Spielerprofil":
         compact_dataframe(
             p_games[["Datum", "Wettbewerb", "Runde", "Phase", "Spiel", "Resultat", "Status", "Minuten", "Tore", "Assists", "Scorer", "Gelb", "Gelb-Rot", "Rot"]],
             height=520,
-            column_config={"Spiel": st.column_config.TextColumn("Spiel", width="large")},
+            column_config={"Spiel": st.column_config.TextColumn("Spiel", width=210)},
         )
 
         trend = p_stats.sort_values("Datum").copy()
@@ -1181,4 +1217,4 @@ elif page == "🔎 Spielerprofil":
 
 st.sidebar.divider()
 st.sidebar.caption(f"Datenquelle: {DATA_FILE.name}")
-st.sidebar.caption("Version: 1.4.5 · Diagramme fixiert")
+st.sidebar.caption("Version: 1.4.6 · Tabellen optimiert")
