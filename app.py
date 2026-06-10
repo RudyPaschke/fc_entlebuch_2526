@@ -192,9 +192,9 @@ h1, h2, h3 {{
 
 
 /* Lesbarkeit: dunklere Schrift, besonders auf Mobile */
-body, .stApp {
+body, .stApp {{
     color: #111827;
-}
+}}
 [data-testid="stMarkdownContainer"],
 [data-testid="stMarkdownContainer"] p,
 [data-testid="stMarkdownContainer"] li,
@@ -204,38 +204,38 @@ label,
 .stSelectbox label,
 .stMultiSelect label,
 .stRadio label,
-.stCheckbox label {
+.stCheckbox label {{
     color: #111827 !important;
-}
-[data-testid="stWidgetLabel"] p {
+}}
+[data-testid="stWidgetLabel"] p {{
     color: #111827 !important;
     font-weight: 800 !important;
-}
+}}
 [data-baseweb="select"] div,
 [data-baseweb="select"] span,
 [data-baseweb="popover"] div,
 [data-baseweb="popover"] span,
-[data-baseweb="menu"] div {
+[data-baseweb="menu"] div {{
     color: #111827 !important;
-}
-[data-testid="stDataFrame"] * {
+}}
+[data-testid="stDataFrame"] * {{
     color: #111827;
-}
+}}
 /* Sekundärtexte bewusst nicht hellgrau */
-.fce-card-sub, .fce-mini-table-note, .small-note {
+.fce-card-sub, .fce-mini-table-note, .small-note {{
     color: #1f2937 !important;
-}
+}}
 /* Streamlit-Hinweistexte auf Handy besser lesbar */
-@media (max-width: 768px) {
+@media (max-width: 768px) {{
     [data-testid="stMarkdownContainer"] p,
     [data-testid="stMarkdownContainer"] li,
-    label {
+    label {{
         font-size: 0.95rem;
         line-height: 1.35;
-    }
-    .fce-card-title { color: #111827 !important; }
-    .fce-card-sub { color: #1f2937 !important; font-size: 0.78rem; }
-}
+    }}
+    .fce-card-title {{ color: #111827 !important; }}
+    .fce-card-sub {{ color: #1f2937 !important; font-size: 0.78rem; }}
+}}
 
 
 /* Mobile-Optimierung */
