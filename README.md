@@ -1,12 +1,15 @@
-# FC Entlebuch Statistik App v1.3.2
+# FC Entlebuch Statistik App
 
-Änderung in dieser Version:
-- In der Datenbasis ist nun jede Kombination aus Spiel und Spieler vorhanden.
-- Wenn ein Spieler in einem Spiel nicht eingesetzt wurde, steht in `SpielerSpielStatistik` der Status `Ohne Einsatz` und `Minuten = 0`.
-- Das Spielerprofil zeigt dadurch auch Spiele ohne Einsatz an.
-- In den Spieldetails werden eingesetzte Spieler direkt angezeigt; nicht eingesetzte Spieler sind in einem aufklappbaren Bereich sichtbar.
+Streamlit-App für die Team- und Spielerstatistik des FC Entlebuch.
 
-Start lokal:
+## Version 1.4.5
+
+- Mobile-optimierte Navigation und Tabellen
+- Kontrast der Dropdowns und Texte verbessert
+- Heim/Auswärts-Bereich kompakter dargestellt
+- Plotly-Balkendiagramme fixiert: kein versehentliches Zoomen oder Auswählen mehr
+
+## Lokal starten
 
 ```bash
 python3 -m venv .venv
@@ -15,11 +18,3 @@ python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
 python3 -m streamlit run app.py
 ```
-
-
-Neu in Version 1.3.3: Im Spielerprofil gibt es einen Vergleich Total Meisterschaft / Vorrunde / Rückrunde / Veränderung für Einsatzminuten, Startelf-Einsätze, Einwechslungen, Tore und Assists.
-
-
-## Änderung v1.4.1
-
-- Auf der Übersichtseite im Bereich Heim/Auswärts wurden die Kennzahlen-Kacheln entfernt. Der Bereich zeigt nun nur noch die kompakte Vergleichstabelle und die Differenz-Tabelle.

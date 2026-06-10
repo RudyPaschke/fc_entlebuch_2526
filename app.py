@@ -11,6 +11,14 @@ APP_TITLE = "FC Entlebuch – Team- & Spielerstatistik 2025/26"
 DATA_FILE = Path(__file__).parent / "data" / "FC_Entlebuch_Daten_26_27.xlsx"
 TEAM_NAME = "FC Entlebuch"
 
+# Diagramme bewusst statisch: Auf Mobile verhindert das versehentliches Zoomen/Markieren.
+PLOTLY_STATIC_CONFIG = {
+    "displayModeBar": False,
+    "scrollZoom": False,
+    "doubleClick": False,
+    "staticPlot": True,
+}
+
 # FC-Entlebuch-Branding: grün als Hauptfarbe, rot/schwarz/weiss als Akzentfarben.
 FCE_GREEN = "#00843D"
 FCE_DARK_GREEN = "#005A2B"
@@ -1078,7 +1086,7 @@ elif page == "⚽ Tore & Zeitpunkte":
         fig.update_layout(legend_title_text="")
         fig.update_yaxes(categoryorder="array", categoryarray=["90+", "76–90", "61–75", "46–60", "31–45", "16–30", "0–15"])
         fig = style_figure(fig, height=440, horizontal=True)
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig, use_container_width=True, config=PLOTLY_STATIC_CONFIG)
     else:
         st.info("Keine Tore für die gewählten Filter vorhanden.")
 
@@ -1169,8 +1177,8 @@ elif page == "🔎 Spielerprofil":
             )
             fig.update_yaxes(autorange="reversed")
             fig = style_figure(fig, height=max(430, min(850, 28 * len(trend) + 120)), horizontal=True)
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig, use_container_width=True, config=PLOTLY_STATIC_CONFIG)
 
 st.sidebar.divider()
 st.sidebar.caption(f"Datenquelle: {DATA_FILE.name}")
-st.sidebar.caption("Version: 1.4 · Mobile optimiert")
+st.sidebar.caption("Version: 1.4.5 · Diagramme fixiert")
