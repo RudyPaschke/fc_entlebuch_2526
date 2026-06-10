@@ -238,6 +238,50 @@ label,
 }}
 
 
+/* Dropdown-Fix: helle Auswahlfelder und lesbare Optionen */
+div[data-baseweb="select"] > div {{
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    border-color: #d1d5db !important;
+}}
+div[data-baseweb="select"] input {{
+    color: #111827 !important;
+}}
+div[data-baseweb="select"] svg {{
+    color: #111827 !important;
+    fill: #111827 !important;
+}}
+div[data-baseweb="select"] span {{
+    color: #111827 !important;
+}}
+div[data-baseweb="popover"],
+div[data-baseweb="popover"] > div,
+div[data-baseweb="popover"] div[role="listbox"],
+div[data-baseweb="popover"] ul {{
+    background-color: #ffffff !important;
+    color: #111827 !important;
+}}
+div[role="option"],
+li[role="option"] {{
+    background-color: #ffffff !important;
+    color: #111827 !important;
+}}
+div[role="option"] *,
+li[role="option"] * {{
+    color: #111827 !important;
+}}
+div[role="option"]:hover,
+li[role="option"]:hover {{
+    background-color: #f3f4f6 !important;
+}}
+[data-baseweb="tag"] {{
+    background-color: #e8f5ee !important;
+}}
+[data-baseweb="tag"] span {{
+    color: #111827 !important;
+}}
+
+
 /* Mobile-Optimierung */
 @media (max-width: 768px) {{
     .block-container {{padding: 0.75rem 0.7rem 1.4rem 0.7rem;}}
