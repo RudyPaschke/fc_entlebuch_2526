@@ -123,7 +123,7 @@ CUSTOM_CSS = f"""
 }}
 [data-testid="stMetricLabel"] {{
     font-weight: 800;
-    color: #374151;
+    color: #111827;
 }}
 
 /* Navigation / Inputs */
@@ -171,8 +171,8 @@ h1, h2, h3 {{
 }}
 .fce-card-title {{
     font-size: 0.85rem;
-    color: #6b7280;
-    font-weight: 800;
+    color: #1f2937;
+    font-weight: 900;
     text-transform: uppercase;
     letter-spacing: .06em;
 }}
@@ -185,9 +185,57 @@ h1, h2, h3 {{
 }}
 .fce-card-sub {{
     font-size: 0.86rem;
-    color: #6b7280;
+    color: #374151;
     margin-top: 3px;
+    font-weight: 600;
 }}
+
+
+/* Lesbarkeit: dunklere Schrift, besonders auf Mobile */
+body, .stApp {
+    color: #111827;
+}
+[data-testid="stMarkdownContainer"],
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] li,
+[data-testid="stMarkdownContainer"] span,
+[data-testid="stCaptionContainer"],
+label,
+.stSelectbox label,
+.stMultiSelect label,
+.stRadio label,
+.stCheckbox label {
+    color: #111827 !important;
+}
+[data-testid="stWidgetLabel"] p {
+    color: #111827 !important;
+    font-weight: 800 !important;
+}
+[data-baseweb="select"] div,
+[data-baseweb="select"] span,
+[data-baseweb="popover"] div,
+[data-baseweb="popover"] span,
+[data-baseweb="menu"] div {
+    color: #111827 !important;
+}
+[data-testid="stDataFrame"] * {
+    color: #111827;
+}
+/* Sekundärtexte bewusst nicht hellgrau */
+.fce-card-sub, .fce-mini-table-note, .small-note {
+    color: #1f2937 !important;
+}
+/* Streamlit-Hinweistexte auf Handy besser lesbar */
+@media (max-width: 768px) {
+    [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMarkdownContainer"] li,
+    label {
+        font-size: 0.95rem;
+        line-height: 1.35;
+    }
+    .fce-card-title { color: #111827 !important; }
+    .fce-card-sub { color: #1f2937 !important; font-size: 0.78rem; }
+}
 
 
 /* Mobile-Optimierung */
@@ -219,8 +267,9 @@ h1, h2, h3 {{
     margin: 8px 0 16px 0;
 }}
 .fce-mini-table-note {{
-    color: #6b7280;
+    color: #1f2937;
     font-size: 0.88rem;
+    font-weight: 600;
     margin-top: -6px;
     margin-bottom: 10px;
 }}
@@ -749,14 +798,14 @@ def style_figure(fig, height: int | None = None, horizontal: bool = False):
     fig.update_layout(
         plot_bgcolor="white",
         paper_bgcolor="white",
-        font=dict(color=FCE_BLACK, size=12),
+        font=dict(color=FCE_BLACK, size=14),
         title=dict(font=dict(size=18, color=FCE_BLACK), x=0.01, xanchor="left"),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
         margin=dict(l=115 if horizontal else 35, r=18, t=68, b=45),
         bargap=0.25,
     )
-    fig.update_xaxes(showgrid=True, gridcolor="#edf2f0", linecolor="#e5e7eb", automargin=True)
-    fig.update_yaxes(showgrid=False, linecolor="#e5e7eb", automargin=True, tickfont=dict(size=11))
+    fig.update_xaxes(showgrid=True, gridcolor="#e5e7eb", linecolor="#9ca3af", automargin=True, tickfont=dict(size=12, color=FCE_BLACK), title_font=dict(size=13, color=FCE_BLACK))
+    fig.update_yaxes(showgrid=False, linecolor="#9ca3af", automargin=True, tickfont=dict(size=12, color=FCE_BLACK), title_font=dict(size=13, color=FCE_BLACK))
     if height:
         fig.update_layout(height=height)
     return fig
